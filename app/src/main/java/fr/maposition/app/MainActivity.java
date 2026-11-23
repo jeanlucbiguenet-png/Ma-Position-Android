@@ -15,6 +15,8 @@ import android.view.Gravity;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.content.Context;
+
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -26,7 +28,7 @@ public class MainActivity extends Activity {
 
     private TextView info;
 
-    public static File getDatabaseFile(Activity activity) {
+   public static File getDatabaseFile(Context activity) {
         File[] dirs = activity.getExternalFilesDirs(null);
         if (dirs != null) {
             for (File dir : dirs) {
