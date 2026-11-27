@@ -4,7 +4,7 @@ android {
     namespace 'fr.maposition.app'
     compileSdk 35
     defaultConfig {
-        applicationId 'fr.maposition.app'
+        applicationId 'fr.maposition.app.test'
         minSdk 26
         targetSdk 28
         versionCode 1
