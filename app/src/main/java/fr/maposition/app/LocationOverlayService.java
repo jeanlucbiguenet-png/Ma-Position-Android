@@ -1,4 +1,3 @@
-
 package fr.maposition.app;
 
 import android.app.Notification;
