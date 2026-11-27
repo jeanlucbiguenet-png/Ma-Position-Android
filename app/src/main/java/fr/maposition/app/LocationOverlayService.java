@@ -168,6 +168,81 @@ private String findRoad(Location location) {
         return null;
     }
 
+    SQLiteDatabase database = null;
+    Cursor cursor = null;
+
+    try {
+        database = SQLiteDatabase.openDatabase(
+            file.getAbsolutePath(),
+            null,
+            SQLiteDatabase.OPEN_READONLY
+        );
+
+        double lat = location.getLatitude();
+        double lon = location.getLongitude();
+
+        double x = 6378137.0 * Math.toRadians(lon);
+        double y = 6378137.0 * Math.log(
+            Math.tan(Math.PI / 4.0 + Math.toRadians(lat) / 2.0)
+        );
+
+        cursor = database.rawQuery(
+            "SELECT name, ref, geom FROM routes",
+            null
+        );
+
+        double bestDistance = Double.MAX_VALUE;
+        String bestRoad = null;
+
+        while (cursor.moveToNext()) {
+            String name = cursor.getString(0);
+            String ref = cursor.getString(1);
+            String geom = cursor.getString(2);
+
+            if (geom == null) continue;
+
+            String[] points = geom
+                .replace("LINESTRING (", "")
+                .replace(")", "")
+                .split(",");
+
+            for (String point : points) {
+                String[] coordinates = point.trim().split("\\s+");
+                if (coordinates.length < 2) continue;
+
+                double rx = Double.parseDouble(coordinates[0]);
+                double ry = Double.parseDouble(coordinates[1]);
+
+                double distance = Math.hypot(x - rx, y - ry);
+
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    bestRoad = (ref != null && !ref.isEmpty())
+                        ? ref
+                        : name;
+                }
+            }
+        }
+
+        if (bestDistance <= 100 && bestRoad != null) {
+            return bestRoad;
+        }
+
+        return null;
+
+    } catch (Exception e) {
+        return null;
+    } finally {
+        if (cursor != null) cursor.close();
+        if (database != null) database.close();
+    }
+}
+    File file = MainActivity.getRoutesDatabaseFile(this);
+
+    if (file == null || !file.exists()) {
+        return null;
+    }
+
     return null; // Recherche des routes à compléter ensuite
 }
     private String findAddress(Location location) {
@@ -239,11 +314,18 @@ private String findRoad(Location location) {
                 cursor.close();
                 cursor = null;
 
-                if (bestStreet != null) break;
+               if (bestDistance <= 50) break;
             }
 
-            if (bestStreet == null) {
-                return "Adresse non disponible";
+           if (bestStreet == null || bestDistance > 50) {
+    String road = findRoad(location);
+
+    if (road != null) {
+        return road;
+    }
+
+    return bestCity != null ? bestCity : "Adresse non disponible";
+}
             }
 
             StringBuilder result = new StringBuilder();
