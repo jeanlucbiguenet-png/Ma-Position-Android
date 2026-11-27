@@ -17,23 +17,36 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.content.Context;
 
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 
 public class MainActivity extends Activity {
+
     private static final int LOCATION_REQUEST = 10;
     private static final int DATABASE_REQUEST = 20;
+    private static final int ROUTES_REQUEST = 21;
 
     private TextView info;
 
-   public static File getDatabaseFile(Context activity) {
+    public static File getDatabaseFile(Context activity) {
         File[] dirs = activity.getExternalFilesDirs(null);
         if (dirs != null) {
             for (File dir : dirs) {
                 if (dir != null && Environment.isExternalStorageRemovable(dir)) {
                     return new File(dir, "adresses.db");
+                }
+            }
+        }
+        return null;
+    }
+
+    public static File getRoutesDatabaseFile(Context activity) {
+        File[] dirs = activity.getExternalFilesDirs(null);
+        if (dirs != null) {
+            for (File dir : dirs) {
+                if (dir != null && Environment.isExternalStorageRemovable(dir)) {
+                    return new File(dir, "routes.db");
                 }
             }
         }
@@ -56,7 +69,7 @@ public class MainActivity extends Activity {
         page.addView(title);
 
         info = new TextView(this);
-        info.setText("Sélectionnez la base BAN sur votre carte SD.");
+        info.setText("Sélectionnez les bases sur votre carte SD.");
         info.setTextSize(16);
         info.setPadding(0, 24, 0, 24);
         page.addView(info);
@@ -64,6 +77,10 @@ public class MainActivity extends Activity {
         Button select = new Button(this);
         select.setText("Choisir la base BAN");
         page.addView(select);
+
+        Button selectRoutes = new Button(this);
+        selectRoutes.setText("Choisir la base des routes");
+        page.addView(selectRoutes);
 
         Button start = new Button(this);
         start.setText("Afficher le bandeau");
@@ -75,33 +92,45 @@ public class MainActivity extends Activity {
 
         setContentView(page);
 
-        select.setOnClickListener(v -> chooseDatabase());
+        select.setOnClickListener(v -> chooseDatabase(DATABASE_REQUEST));
+        selectRoutes.setOnClickListener(v -> chooseDatabase(ROUTES_REQUEST));
         start.setOnClickListener(v -> prepareAndStart());
+
         stop.setOnClickListener(v ->
             stopService(new Intent(this, LocationOverlayService.class)));
     }
 
-    private void chooseDatabase() {
+    private void chooseDatabase(int requestCode) {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*");
-        startActivityForResult(intent, DATABASE_REQUEST);
+        startActivityForResult(intent, requestCode);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == DATABASE_REQUEST && resultCode == RESULT_OK
+        if ((requestCode == DATABASE_REQUEST || requestCode == ROUTES_REQUEST)
+                && resultCode == RESULT_OK
                 && data != null && data.getData() != null) {
+
             Uri uri = data.getData();
-            info.setText("Copie de la base BAN en cours...");
+            boolean routes = (requestCode == ROUTES_REQUEST);
+
+            info.setText(routes
+                    ? "Copie de la base des routes en cours..."
+                    : "Copie de la base BAN en cours...");
 
             new AsyncTask<Void, Void, String>() {
+
                 @Override
                 protected String doInBackground(Void... unused) {
                     try {
-                        File destination = getDatabaseFile(MainActivity.this);
+                        File destination = routes
+                                ? getRoutesDatabaseFile(MainActivity.this)
+                                : getDatabaseFile(MainActivity.this);
+
                         if (destination == null) {
                             return "Carte SD introuvable.";
                         }
@@ -116,17 +145,24 @@ public class MainActivity extends Activity {
                              FileOutputStream output =
                                 new FileOutputStream(destination)) {
 
-                            if (input == null) return "Lecture impossible.";
+                            if (input == null) {
+                                return "Lecture impossible.";
+                            }
 
                             byte[] buffer = new byte[1024 * 1024];
                             int count;
+
                             while ((count = input.read(buffer)) != -1) {
                                 output.write(buffer, 0, count);
                             }
+
                             output.getFD().sync();
                         }
 
-                        return "Copie terminée. Vous pouvez démarrer.";
+                        return routes
+                                ? "Copie de routes.db terminée."
+                                : "Copie de adresses.db terminée.";
+
                     } catch (Exception e) {
                         return "Erreur pendant la copie : " + e.getMessage();
                     }
@@ -136,6 +172,7 @@ public class MainActivity extends Activity {
                 protected void onPostExecute(String result) {
                     info.setText(result);
                 }
+
             }.execute();
         }
     }
@@ -161,7 +198,7 @@ public class MainActivity extends Activity {
         File database = getDatabaseFile(this);
         if (database == null || !database.exists()) {
             info.setText("Choisissez d'abord la base BAN.");
-            chooseDatabase();
+            chooseDatabase(DATABASE_REQUEST);
             return;
         }
 
