@@ -233,7 +233,7 @@ private String findRoad(Location location) {
         if (database != null) database.close();
     }
 }
-    File file = MainActivity.getRoutesDatabaseFile(this);
+   
 
 
     private String findAddress(Location location) {
