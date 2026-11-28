@@ -235,12 +235,7 @@ private String findRoad(Location location) {
 }
     File file = MainActivity.getRoutesDatabaseFile(this);
 
-    if (file == null || !file.exists()) {
-        return null;
-    }
 
-    return null; // Recherche des routes à compléter ensuite
-}
     private String findAddress(Location location) {
         File databaseFile = MainActivity.getDatabaseFile(this);
 
