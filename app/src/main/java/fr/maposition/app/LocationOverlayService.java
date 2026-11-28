@@ -162,11 +162,7 @@ private File routesDatabaseFile;
         }).start();
     }
 private String findRoad(Location location) {
-    File file = MainActivity.getRoutesDatabaseFile(this);
-
-    if (file == null || !file.exists()) {
-        return null;
-    }
+ 
 
     SQLiteDatabase database = null;
     Cursor cursor = null;
