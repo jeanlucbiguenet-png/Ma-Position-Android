@@ -8,7 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.location.Location;
+import android.location.Location;F
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
@@ -162,7 +162,11 @@ private File routesDatabaseFile;
         }).start();
     }
 private String findRoad(Location location) {
- 
+     File file = MainActivity.getRoutesDatabaseFile(this);
+
+    if (file == null || !file.exists()) {
+        return null;
+    }
 
     SQLiteDatabase database = null;
     Cursor cursor = null;
